@@ -1,0 +1,144 @@
+<script type="module">
+    import kaboom from "https://unpkg.com/kaboom@3000.0.1/dist/kaboom.mjs";
+
+    // initialize context
+    kaboom();
+
+    // load sprites first
+    loadSprite("space-invader", "/sprites/space-invader.png")
+    loadSprite("wall", "/sprites/wall.jpg")
+    loadSprite("space-ship", "/sprites/player.png")
+
+    scene("game", () => {
+        const SPEED = 300;
+        const INVADER_SPEED = 100;
+        const LEVEL_DOWN = 5;
+        var CURRENT_SPEED = INVADER_SPEED;
+        var timeLeft = 60;
+        var mscore = 0;
+
+        // add all game objects
+        add([
+            rect(width(), height()),
+        ]);
+
+        addLevel([
+            '!   ^^^^^^^^^  &',
+            '!   ^^^^^^^^^  &',
+            '!   ^^^^^^^^^  &',
+            '!              &',
+            '!              &',
+            '!              &',
+            '!              &',
+            '!              &',
+            '!              &',
+            '!              &'
+        ], {
+            tileWidth: 30,
+            tileHeight: 22,
+            tiles: {
+                '^': () => [sprite("space-invader"), scale(0.4), area(), 'space-invader'],
+                '!': () => [sprite("wall"), scale(0.75), area(), 'left-wall'],
+                '&': () => [sprite("wall"), scale(0.75), area(), 'right-wall']
+            }
+        });
+
+        const player = add([
+            sprite("space-ship"),
+            scale(0.1),
+            pos(width() / 2, height() / 2),
+            area()
+            //origin("center")
+        ]);
+
+        onKeyDown("left", () => {
+            player.move(-SPEED, 0)
+        });
+
+        onKeyDown("right", () => {
+            player.move(SPEED, 0)
+        });
+
+        onKeyPress("space", () => {
+            SpawnBullet(player.pos.add(27.5, 30));
+        });
+
+        function SpawnBullet(p)
+            {
+                add([
+                    rect(6, 18),
+                    pos(p),
+                    anchor("center"),
+                    color(0, 1, 0),
+                    "bullet"
+                ]);
+            }
+
+        const score = add([
+            text("0"),
+            pos(25, 25)
+        ]);
+
+
+        const timer = add([
+            text("0"),
+            pos(50, 25),
+            scale(0.5)
+        ]);
+
+        onUpdate(() => {
+            timeLeft -= dt()
+            timer.text = Math.ceil(timeLeft);
+            if (timeLeft <= 0) {
+                //
+                go("lose", mscore);
+            }
+        });
+
+        onUpdate('space-invader', (s) => {
+            s.move(CURRENT_SPEED, LEVEL_DOWN)
+        });
+
+        onCollide('space-invader', 'left-wall', (invader) => {
+            CURRENT_SPEED = INVADER_SPEED;
+            /*get('space-invader').forEach(s => {
+                s.pos.y -= LEVEL_DOWN;
+            });*/
+        });
+
+        onCollide('space-invader', 'right-wall', (invader) => {
+            CURRENT_SPEED = -INVADER_SPEED;
+            /*get('space-invader').forEach(s => {
+                s.pos.y -= LEVEL_DOWN;
+            });*/
+        });
+
+        player.onCollide("space-invader", () => {
+            go("lose", mscore);
+        });
+
+        onUpdate("space-invader", (s) => {
+            if (s.pos.y >= height() / 2) {
+                go("lose", mscore);
+            }
+        });
+    });
+
+    scene("lose", (score) => {
+        add([
+            text("You lost!"),
+            pos(width() / 2, height() / 2),
+            anchor("center"),
+            scale(2)
+        ]);
+        add([
+            text("Score: " + score),
+            pos(width() / 2, (height() / 2) + 50),
+            anchor("center"),
+            scale(1)
+        ]);
+    });
+
+    // Start the game scene
+    go("game");
+</script>
